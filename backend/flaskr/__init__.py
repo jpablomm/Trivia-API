@@ -14,22 +14,42 @@ def create_app(test_config=None):
   setup_db(app)
   
   '''
-  @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+  @(DONE)TODO(DONE): Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
+  CORS(app)
 
   '''
-  @TODO: Use the after_request decorator to set Access-Control-Allow
+  @(DONE)TODO(DONE): Use the after_request decorator to set Access-Control-Allow
   '''
+  @app.after_request
+  def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.add('Access-Control-Allow-Headers', 'GET, POST, PATCH, DELETE, OPTION')
+    return response
 
   '''
-  @TODO: 
+  @(DONE)TODO(DONE): 
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
+  @app.route('/categories', methods=['GET'])
+  def get_categories():
+    """Fetch and return all categories. Pagination not required."""
+    
+    data = {
+      'categories': {}
+    }
+    try:
+      categories = Category.query.order_by(Category.id).all()
+      for category in categories:
+        data['categories'][f'{category.id}'] = f'{category.type}'
 
+      return jsonify(data), 200
+    except Exception:
+      abort(404)
 
   '''
-  @TODO: 
+  @(DONE)TODO(DONE): 
   Create an endpoint to handle GET requests for questions, 
   including pagination (every 10 questions). 
   This endpoint should return a list of questions, 
@@ -40,6 +60,35 @@ def create_app(test_config=None):
   ten questions per page and pagination at the bottom of the screen for three pages.
   Clicking on the page numbers should update the questions. 
   '''
+  @app.route('/questions')
+  def get_questions():
+    """Fetch and return paginated questions."""
+    
+    page_id = request.args.get('page', 1, type=int)
+    questions = Question.query.order_by(Question.id).all()
+    categories = Category.query.order_by(Category.id).all()
+    
+    questions_per_page = 10
+    start = (page_id - 1) * questions_per_page
+    end = start + questions_per_page
+
+    data = {
+      'questions': [],
+      'totalQuestions': len(questions),
+      'categories': {},
+      'currentCategory': None
+    }
+
+    for question in questions[start:end]:
+      data['questions'].append(question.format())
+    
+    if len(data['questions']) == 0:
+      abort(422)
+
+    for category in categories:
+      data['categories'][f'{category.id}'] = f'{category.type}'
+    return jsonify(data)
+
 
   '''
   @TODO: 
@@ -94,10 +143,45 @@ def create_app(test_config=None):
   '''
 
   '''
-  @TODO: 
+  @(DONE)TODO(DONE):
   Create error handlers for all expected errors 
   including 404 and 422. 
   '''
+
+  @app.errorhandler(404)
+  def not_found(error):
+    return jsonify({
+      'success': False,
+      'error': 404,
+      'message': 'resource not found'
+    }), 404
+
+
+  @app.errorhandler(422)
+  def unprocessable(error):
+    return jsonify({
+      'success': False,
+      'error': 422,
+      'message': 'unprocessable'
+    }), 422
+
+
+  @app.errorhandler(400)
+  def bad_request(error):
+    return jsonify({
+      'success': False,
+      'error': 400,
+      'message': 'bad request'
+    }), 400
+
+
+  @app.errorhandler(405)
+  def method_not_allowed(error):
+    return jsonify({
+      'success': False,
+      'error': 405,
+      'message': 'method not alowed'
+    }), 405
   
   return app
 
