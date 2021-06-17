@@ -91,15 +91,27 @@ def create_app(test_config=None):
 
 
   '''
-  @TODO: 
+  @(DONE)TODO(DONE): 
   Create an endpoint to DELETE question using a question ID. 
 
   TEST: When you click the trash icon next to a question, the question will be removed.
   This removal will persist in the database and when you refresh the page. 
   '''
+  @app.route('/questions/<int:question_id>', methods=['DELETE'])
+  def delete_question(question_id):
+    """Fetch and delete question."""
+    question = Question.query.filter(Question.id == question_id).one_or_none()
+    
+    if question is None:
+      abort(404)
+    question_id = question.id
+    Question.delete(question)
+
+    return jsonify({'deleted': question_id}), 200
+
 
   '''
-  @TODO: 
+  @(DONE)TODO(DONE): 
   Create an endpoint to POST a new question, 
   which will require the question and answer text, 
   category, and difficulty score.
@@ -108,9 +120,44 @@ def create_app(test_config=None):
   the form will clear and the question will appear at the end of the last page
   of the questions list in the "List" tab.  
   '''
+  @app.route('/questions', methods=['POST'])
+  def create_question():
+    data = request.get_json()
+    search = data.get('searchTerm', None)
+    if search:
+      questions = Question.query \
+        .filter(Question.question.ilike('%{}%'.format(data['searchTerm']))).all()
+      res = {
+        'questions': [],
+        'totalQuestions': len(questions),
+        'currentCategory': None
+      }
+      for question in questions:
+        new_question = {
+          'question': question.question,
+          'answer': question.answer,
+          'difficulty': question.difficulty,
+          'category': question.category
+        }
+        res['questions'].append(new_question)
+      return jsonify(res)
+    else:
+      new_question = Question(
+        question = data.get('question'),
+        answer = data.get('answer'),
+        difficulty = int(data.get('difficulty')),
+        category = int(data.get('category'))
+      )
+      print(new_question)
+      try:
+        new_question.insert()
+        return jsonify({}), 200
+      except Exception:
+        print(Exception)
+        abort(422)
 
   '''
-  @TODO: 
+  @(DONE_ABOVE)TODO(DONE_ABOVE): 
   Create a POST endpoint to get questions based on a search term. 
   It should return any questions for whom the search term 
   is a substring of the question. 
@@ -128,7 +175,24 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
+  @app.route('/categories/<int:category_id>/questions')
+  def get_question_based_on_category(category_id):
+    questions = Question.query.filter(Question.category == category_id).first()
+    res = {
+        'questions': [],
+        'totalQuestions': len(questions),
+        'currentCategory': Category.query.filter(Category.id == category_id).first()
+      }
+    for question in questions:
+      new_question = {
+        'question': question.get('question'),
+        'answer': question.get('answer'),
+        'difficulty': question.get('difficulty'),
+        'category': question.get('category')
+      }
+      res['questions'].append(new_question)
 
+      return jsonify(res), 200
 
   '''
   @TODO: 
