@@ -90,6 +90,8 @@ def create_app(test_config=None):
     if search:
       questions = Question.query \
         .filter(Question.question.ilike('%{}%'.format(data['searchTerm']))).all()
+      if len(questions) == 0:
+        abort(422)
       res = {
         'questions': [],
         'totalQuestions': len(questions),
@@ -122,7 +124,7 @@ def create_app(test_config=None):
 
   @app.route('/categories/<int:category_id>/questions')
   def get_question_based_on_category(category_id):
-    """Fetch and serve questions based on category."""
+    """Fetch and serve questions based on categoryy."""
     try:
       questions = Question.query.filter(Question.category == category_id).all()
       res = {
