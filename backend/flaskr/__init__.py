@@ -122,48 +122,56 @@ def create_app(test_config=None):
 
   @app.route('/categories/<int:category_id>/questions')
   def get_question_based_on_category(category_id):
-    questions = Question.query.filter(Question.category == category_id).all()
-    res = {
-        'questions': [],
-        'totalQuestions': len(questions),
-        'currentCategory': Category.query.filter(Category.id == category_id).first().type
-      }
-    for question in questions:
-      new_question = {
-        'question': question.question,
-        'answer': question.answer,
-        'difficulty': question.difficulty,
-        'category': question.category
-      }
-      res['questions'].append(new_question)
+    """Fetch and serve questions based on category."""
+    try:
+      questions = Question.query.filter(Question.category == category_id).all()
+      res = {
+          'questions': [],
+          'totalQuestions': len(questions),
+          'currentCategory': Category.query.filter(Category.id == category_id).first().type
+        }
+      for question in questions:
+        new_question = {
+          'question': question.question,
+          'answer': question.answer,
+          'difficulty': question.difficulty,
+          'category': question.category
+        }
+        res['questions'].append(new_question)
 
-    return jsonify(res), 200
+      return jsonify(res), 200
+    except Exception:
+      abort(404)
 
 
   @app.route('/quizzes', methods=['POST'])
   def play_quiz():
+    """Select and send random questions in specific category."""
     data = request.get_json()
-    previous_questions = data.get('previous_questions', None)
-    quiz_category_id = data.get('quiz_category', None)['id']
-    if quiz_category_id == 0:
-      cat_questions = Question.query.all()
-    else:
-      cat_questions = Question.query.filter(Question.category == int(quiz_category_id)).all()
+    try:
+      previous_questions = data.get('previous_questions', None)
+      quiz_category_id = data.get('quiz_category', None)['id']
+      if quiz_category_id == 0:
+        cat_questions = Question.query.all()
+      else:
+        cat_questions = Question.query.filter(Question.category == int(quiz_category_id)).all()
 
-    questions = [question for question in cat_questions if question.id not in previous_questions]
+      questions = [question for question in cat_questions if question.id not in previous_questions]
 
-    random_question = random.choice(questions)
+      random_question = random.choice(questions)
 
-    res = {
-      'question': {
-        'id':random_question.id,
-        'question': random_question.question,
-        'answer': random_question.answer,
-        'difficulty': random_question.difficulty,
-        'category': random_question.category
+      res = {
+        'question': {
+          'id':random_question.id,
+          'question': random_question.question,
+          'answer': random_question.answer,
+          'difficulty': random_question.difficulty,
+          'category': random_question.category
+        }
       }
-    }
-    return jsonify(res), 200
+      return jsonify(res), 200
+    except:
+      abort(404)
 
 
   @app.errorhandler(404)
